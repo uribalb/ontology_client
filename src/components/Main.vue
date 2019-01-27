@@ -6,7 +6,6 @@
       </v-flex>
       <v-flex xs12>
         <v-menu
-        
           open-on-hover
           bottom
           offset-y
@@ -28,6 +27,7 @@
         </v-menu>
       </v-flex>
       <v-flex xs12>
+        <v-progress-linear class="ma-0" :indeterminate="load"></v-progress-linear>
         <v-form>
           <codemirror v-model="queryTrim"></codemirror>
           <v-btn
@@ -147,7 +147,7 @@ filter(?r >= ?avgR || ?c >= ?avgC)
     `
       }
     ];
-    this.query = this.altQueries[0].query
+    this.query = this.altQueries[0].query;
   }
 };
 </script>
