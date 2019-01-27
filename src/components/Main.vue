@@ -6,18 +6,19 @@
       </v-flex>
       <v-flex xs12>
         <v-menu
-          dark
+        
           open-on-hover
-          right
-          offset-x
+          bottom
+          offset-y
+          transition="scale-transition"
           max-width="200px"
           v-for="(elm, index) in altQueries"
           :key="index"
         >
-          <div class="pa-3 white--text grey darken-4">
+          <v-sheet class="pa-3" color="#302C2B">
             <h3 class="amber--text lighten-1">{{elm.title}}</h3>
-            <p>{{elm.description}}</p>
-          </div>
+            <p class="white--text">{{elm.description}}</p>
+          </v-sheet>
           <v-btn
             slot="activator"
             color="#003049"
@@ -35,7 +36,7 @@
             large
             @click="sender"
             @keyup.ctrl.76="sender"
-          >Envoyer</v-btn>
+          >Excécuter</v-btn>
         </v-form>
       </v-flex>
 
@@ -69,7 +70,7 @@ export default {
     tuples: [],
     load: false,
     emptyResp: false,
-    altQueries: [],
+    altQueries: []
   }),
   computed: {
     queryTrim() {
@@ -106,15 +107,20 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX cd: <http://citydata.wu.ac.at/ns#>
 PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
     `;
-    this.query = `
+
+    this.altQueries = [
+      {
+        title: "Tous tuples",
+        description: `Requête basique: retourne l'ensemble des tuples 
+                     RDF de l'ontologie`,
+        query: `
 ${queryHeader}
 SELECT ?subject ?predicate ?object
 WHERE {
   ?subject ?predicate ?object
 }
-  `;
-
-    this.altQueries = [
+  `
+      },
       {
         title: "Géants d'industrie",
         description: `
@@ -141,6 +147,7 @@ filter(?r >= ?avgR || ?c >= ?avgC)
     `
       }
     ];
+    this.query = this.altQueries[0].query
   }
 };
 </script>
@@ -148,5 +155,16 @@ filter(?r >= ?avgR || ?c >= ?avgC)
 <style>
 .CodeMirror {
   text-align: left !important;
+}
+.CodeMirror-focused .cm-matchhighlight {
+  background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVQI12NgYGBgkKzc8x9CMDAwAAAmhwSbidEoSQAAAABJRU5ErkJggg==);
+  background-position: bottom;
+  background-repeat: repeat-x;
+}
+.cm-matchhighlight {
+  background-color: rgba(146, 181, 255, 0.205);
+}
+.CodeMirror-selection-highlight-scrollbar {
+  background-color: green;
 }
 </style>
