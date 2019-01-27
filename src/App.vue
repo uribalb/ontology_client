@@ -1,6 +1,6 @@
 <template>
-  <v-app>
-    <v-toolbar app>
+  <v-app  class="white">
+    <v-toolbar>
       <v-toolbar-title class="headline text-uppercase">
         <span>Business</span>
         &nbsp;
