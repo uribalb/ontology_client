@@ -5,16 +5,37 @@
         <v-img src="@/assets/logo.png" class="my-1" contain height="150"></v-img>
       </v-flex>
       <v-flex xs12>
-        <v-btn color="#003049" class="white--text">Requête 1</v-btn>
-        <v-btn color="#003049" class="white--text">Requête 2</v-btn>
-        <v-btn color="#003049" class="white--text">Requête 3</v-btn>
-        <v-btn color="#003049" class="white--text">Requête 4</v-btn>
-        <v-btn color="#003049" class="white--text">Requête 5</v-btn>
+        <v-menu
+          dark
+          open-on-hover
+          right
+          offset-x
+          max-width="200px"
+          v-for="(elm, index) in altQueries"
+          :key="index"
+        >
+          <div class="pa-3 white--text grey darken-4">
+            <h3 class="amber--text lighten-1">{{elm.title}}</h3>
+            <p>{{elm.description}}</p>
+          </div>
+          <v-btn
+            slot="activator"
+            color="#003049"
+            class="white--text"
+            @click="query=elm.query"
+          >{{elm.title}}</v-btn>
+        </v-menu>
       </v-flex>
       <v-flex xs12>
         <v-form>
-          <v-textarea solo auto-grow v-model="query" :loading="load"></v-textarea>
-          <v-btn color="#053C5E" class="white--text" large @click="sender" @keyup.ctrl.76="sender">Envoyer</v-btn>
+          <codemirror v-model="queryTrim"></codemirror>
+          <v-btn
+            color="#053C5E"
+            class="white--text"
+            large
+            @click="sender"
+            @keyup.ctrl.76="sender"
+          >Envoyer</v-btn>
         </v-form>
       </v-flex>
 
@@ -50,6 +71,11 @@ export default {
     emptyResp: false,
     altQueries: [],
   }),
+  computed: {
+    queryTrim() {
+      return this.query.trim();
+    }
+  },
   methods: {
     async sender() {
       this.load = true;
@@ -72,16 +98,55 @@ export default {
     }
   },
   mounted() {
-    this.query = `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX owl: <http://www.w3.org/2002/07/owl#>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nprefix : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
-\nSELECT ?subject ?predicate ?object\nWHERE {
-    ?subject ?predicate ?object\n}`;
+    const queryHeader = `
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX cd: <http://citydata.wu.ac.at/ns#>
+PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
+    `;
+    this.query = `
+${queryHeader}
+SELECT ?subject ?predicate ?object
+WHERE {
+  ?subject ?predicate ?object
+}
+  `;
 
-     window.addEventListener("keypress", e => {
-      console.log(String.fromCharCode(e.keyCode));
-    });
+    this.altQueries = [
+      {
+        title: "Géants d'industrie",
+        description: `
+      Retourne les compagnies dont le revenu  (ou capital)
+      est supérieur au revenu moyen (ou capital moyen) de 
+      leurs industries respectives
+      `,
+        query: `
+${queryHeader}
+select ?x ?r ?c ?z ?avgR ?avgC ?count where {
+  ?x :operating_in ?z.
+  ?x :revenue ?r.
+  ?x :capital ?c.
+filter(?r >= ?avgR || ?c >= ?avgC)
+
+  {
+  select ?z (avg(?y) as ?avgR) (avg(?w) as ?avgC) (count(?s) as ?count) where {
+    ?s :revenue ?y.
+    ?s :capital ?w.
+    ?s :operating_in ?z
+  } GROUP BY ?z
+    }
+}
+    `
+      }
+    ];
   }
 };
 </script>
 
 <style>
+.CodeMirror {
+  text-align: left !important;
+}
 </style>
