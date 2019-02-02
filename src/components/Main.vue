@@ -73,8 +73,15 @@ export default {
     altQueries: []
   }),
   computed: {
-    queryTrim() {
+    queryTrim:{
+      // getter
+      get: function () {
       return this.query.trim();
+      },
+      // setter
+      set: function (newValue) {
+        this.query = this.queryTrim
+      }
     }
   },
   methods: {
