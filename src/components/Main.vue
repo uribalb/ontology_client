@@ -22,7 +22,7 @@
             slot="activator"
             color="#003049"
             class="white--text"
-            @click="query=elm.query"
+            @click="query=queryHeader + elm.query"
           >{{elm.title}}</v-btn>
         </v-menu>
       </v-flex>
@@ -70,7 +70,15 @@ export default {
     tuples: [],
     load: false,
     emptyResp: false,
-    altQueries: []
+    altQueries: [],
+    queryHeader: `
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX cd: <http://citydata.wu.ac.at/ns#>
+PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
+    `
   }),
   computed: {
     queryTrim:{
@@ -89,7 +97,7 @@ export default {
       this.load = true;
       let urlQuery =
         "http://localhost:3030/companies?query=" +
-        encodeURIComponent(this.query);
+        encodeURIComponent(this.queryHeader + this.query);
       let response = await fetch(urlQuery);
       this.result = await response.json();
       this.headers = this.result.head.vars.map(str => {
@@ -106,22 +114,13 @@ export default {
     }
   },
   mounted() {
-    const queryHeader = `
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX cd: <http://citydata.wu.ac.at/ns#>
-PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
-    `;
-
+  
     this.altQueries = [
       {
         title: "Tous tuples",
         description: `Requête basique: retourne l'ensemble des tuples 
                      RDF de l'ontologie`,
         query: `
-${queryHeader}
 SELECT ?subject ?predicate ?object
 WHERE {
   ?subject ?predicate ?object
@@ -136,7 +135,6 @@ WHERE {
       leurs industries respectives
       `,
         query: `
-${queryHeader}
 select ?x ?r ?c ?z ?avgR ?avgC ?count where {
   ?x :operating_in ?z.
   ?x :revenue ?r.
@@ -152,9 +150,60 @@ filter(?r >= ?avgR || ?c >= ?avgC)
     }
 }
     `
+      },
+      {
+        title: 'Secteur Dominant',
+        description:`Retourne le secteur ayant le plus de compagnies
+                    ainsi que les compagnies qui s'y trouvent
+                    `,
+        query:`
+SELECT distinct ?sector  ?company WHERE { 
+  { 
+    SELECT ?sector (count(?company) as ?count) WHERE { 
+      ?sector :sector_of ?company . 
+    } GROUP BY ?sector 
+   }filter(?count = ?maxCount)
+   {
+     SELECT (max(?number_of_companies) AS ?maxCount) WHERE {
+       {
+          SELECT ?sector (COUNT(?company) as ?number_of_companies) WHERE { 
+          	?sector :sector_of ?company . 
+          } GROUP BY ?sector 
+      	} 
+      } 
+    }
+   {
+     SELECT * WHERE {
+          ?company :operating_in ?sector . 
+      }
+    }
+}
+        `
+      },
+      {
+        title: "Compagnies clés par ville",
+        description: `
+        Retourne, pour chaque ville, 
+        la compagnie ayant le capital maximal 
+        parmi les compagnies dont le quartier général
+        se trouve dans la ville en question
+        `,
+        query: `
+select ?x ?r ?z ?maxC where {
+  ?x :headquarters ?z.
+  ?x :capital ?r.
+filter(?r = ?maxC)
+  {
+  select ?z (max(?y) as ?maxC) where {
+    ?s :capital ?y.
+    ?s :headquarters ?z
+  } GROUP BY ?z
+    }
+}
+        `
       }
     ];
-    this.query = this.altQueries[0].query;
+    this.query = this.queryHeader + this.altQueries[0].query;
   }
 };
 </script>
