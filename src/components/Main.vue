@@ -80,7 +80,7 @@ export default {
       },
       // setter
       set: function (newValue) {
-        this.query = this.queryTrim
+        this.query = newValue
       }
     }
   },
