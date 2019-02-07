@@ -77,7 +77,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl: <http://www.w3.org/2002/07/owl#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX cd: <http://citydata.wu.ac.at/ns#>
-PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
+PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/companies#>
     `
   }),
   computed: {
@@ -97,7 +97,7 @@ PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
       this.load = true;
       let urlQuery =
         "http://localhost:3030/companies?query=" +
-        encodeURIComponent(this.queryHeader + this.query);
+        encodeURIComponent(this.query);
       let response = await fetch(urlQuery);
       this.result = await response.json();
       this.headers = this.result.head.vars.map(str => {
@@ -117,13 +117,16 @@ PREFIX : <http://www.semanticweb.org/jilb/ontologies/2018/11/compagnies#>
   
     this.altQueries = [
       {
-        title: "Tous tuples",
-        description: `Requête basique: retourne l'ensemble des tuples 
-                     RDF de l'ontologie`,
+        title: "Partenaires du secteur publique",
+        description: `Requête basique: retourne toutes les organisations
+                      ayant collaboré avec des états sur des projets 
+                     ainsi que les états et projets concernés.`,
         query: `
-SELECT ?subject ?predicate ?object
+SELECT ?etat  ?project ?partenaire
 WHERE {
-  ?subject ?predicate ?object
+  ?etat a :State.
+  ?etat :stakeholder_in ?project.
+  ?partenaire :stakeholder_in ?project.
 }
   `
       },
@@ -132,7 +135,7 @@ WHERE {
         description: `
       Retourne les compagnies dont le revenu  (ou capital)
       est supérieur au revenu moyen (ou capital moyen) de 
-      leurs industries respectives
+      leurs industries respectives.
       `,
         query: `
 select ?x ?r ?c ?z ?avgR ?avgC ?count where {
@@ -154,7 +157,7 @@ filter(?r >= ?avgR || ?c >= ?avgC)
       {
         title: 'Secteur Dominant',
         description:`Retourne le secteur ayant le plus de compagnies
-                    ainsi que les compagnies qui s'y trouvent
+                    ainsi que les compagnies qui s'y trouvent.
                     `,
         query:`
 SELECT distinct ?sector  ?company WHERE { 
@@ -186,7 +189,7 @@ SELECT distinct ?sector  ?company WHERE {
         Retourne, pour chaque ville, 
         la compagnie ayant le capital maximal 
         parmi les compagnies dont le quartier général
-        se trouve dans la ville en question
+        se trouve dans la ville en question.
         `,
         query: `
 select ?x ?r ?z ?maxC where {
@@ -199,6 +202,46 @@ filter(?r = ?maxC)
     ?s :headquarters ?z
   } GROUP BY ?z
     }
+}
+        `
+      },
+      {
+        title:"Secteurs mixtes fortement privatisés",
+        description: `
+        Retourne, parmi tous les secteurs comportant des compagnies publiques,
+        ceux dans lesquels il y au moins tois fois plus de compagnies privées
+        que de compagnies publiques.
+        `,
+        query: `
+SELECT ?sector  ?numPriv ?numPub
+WHERE {
+    {
+      select ?sector (count(?comp) as ?numPub) where {
+          ?sector :sector_of ?comp.
+          ?etat a :State.
+          ?sh :shareholder_in ?etat.
+          ?sh :shareholder_out ?comp.
+          ?sh :sharePercent ?p
+          filter(?p >= 50)
+      }group by ?sector
+    }
+      {
+      select ?sector (count(?comp) as ?numPriv) where {
+			{
+              ?sector :sector_of ?comp.
+            }
+            minus
+            {
+              ?sector :sector_of ?comp.
+              ?etat a :State.
+              ?sh :shareholder_in ?etat.
+              ?sh :shareholder_out ?comp.
+              ?sh :sharePercent ?p
+              filter(?p >= 50)
+            }
+      }group by ?sector
+    }
+  filter( 3 * ?numPub <= ?numPriv)
 }
         `
       }
