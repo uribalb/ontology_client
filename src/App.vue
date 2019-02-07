@@ -8,10 +8,10 @@
       </v-toolbar-title>
       <v-spacer></v-spacer>
         <span class="mr-2">
-          <router-link to="/">Home</router-link>
+          <router-link to="/">Accueil</router-link>
         </span>
         <span class="mr-2">
-          <router-link to="/about">About</router-link>
+          <router-link to="/about">A propos</router-link>
         </span>
     </v-toolbar>
 
